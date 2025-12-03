@@ -1,8 +1,8 @@
 // src/schema.ts
 
 /**
- * Phase 2 — Typed database schema
- * You can expand this later.
+ * Database schema for the TypeScript DSL.
+ * You can expand this with more tables over time.
  */
 
 export type UserTable = {
