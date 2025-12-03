@@ -1,8 +1,8 @@
 {
   "scripts": {
-    "dev": "ts-node src/examples/basic.ts",
+    "dev": "ts-node src/basic.ts",
     "build": "tsc",
-    "start": "node dist/examples/basic.js"
+    "start": "node dist/basic.js"
   },
   "devDependencies": {
     "typescript": "^5.9.3",
