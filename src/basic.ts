@@ -2,11 +2,16 @@
 
 import { sql } from "./sql";
 
+// Fully type-safe:
 const query = sql
-  .select("id", "email")
-  .from("users")
-  .where({ id: 123 })
-  .orderBy("createdAt", "desc");
+  .from("users") // table fixed: UserTable
+  .select("id", "email") // ❌ cannot select "foo"
+  .where({ id: 123 }) // ❌ wrong column type will error
+  .orderBy("createdAt", "desc") // fully typed
+  .toSQL();
 
-console.log("Generated SQL:");
-console.log(query.toSQL());
+console.log(query);
+
+// sql.from("users").select("foo");
+// sql.from("users").orderBy("body");
+// sql.from("posts").where({ title: 123 });
