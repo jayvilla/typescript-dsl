@@ -1,6 +1,6 @@
 // src/sql.ts
 
-import { TableName, TableOf, ExtractColumns } from "./types";
+import { TableName, TableOf, ExtractColumns, WhereInput } from "./types";
 
 /**
  * QueryBuilder<TTable>
@@ -36,13 +36,19 @@ export class QueryBuilder<TTable = null> {
   }
 
   /**
-   * WHERE — loose for now, strict in Phase 3
+   * WHERE — strongly typed by table schema.
+   *
+   * Example:
+   *   sql.from("users").where({
+   *     id: 123,                      // ✅ id is number
+   *     email: { $eq: "foo@bar.com" } // ✅ email is string
+   *   })
    */
-  where(conditions: Partial<Record<ExtractColumns<TTable>, any>>) {
+  where(conditions: WhereInput<TTable>) {
     const next = new QueryBuilder<TTable>();
     next._select = this._select;
     next._from = this._from;
-    next._where = conditions;
+    next._where = conditions as Record<string, any>;
     next._orderBy = this._orderBy;
     return next;
   }
@@ -63,6 +69,51 @@ export class QueryBuilder<TTable = null> {
   }
 
   /**
+   * Helper: format a single WHERE condition into SQL.
+   */
+  private formatCondition(key: string, value: any): string {
+    // Operator object: { $gt: 10, $lt: 100, $in: [...] }
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      const parts: string[] = [];
+
+      if (value.$eq !== undefined) {
+        parts.push(`${key} = ${JSON.stringify(value.$eq)}`);
+      }
+      if (value.$ne !== undefined) {
+        parts.push(`${key} <> ${JSON.stringify(value.$ne)}`);
+      }
+      if (value.$gt !== undefined) {
+        parts.push(`${key} > ${JSON.stringify(value.$gt)}`);
+      }
+      if (value.$gte !== undefined) {
+        parts.push(`${key} >= ${JSON.stringify(value.$gte)}`);
+      }
+      if (value.$lt !== undefined) {
+        parts.push(`${key} < ${JSON.stringify(value.$lt)}`);
+      }
+      if (value.$lte !== undefined) {
+        parts.push(`${key} <= ${JSON.stringify(value.$lte)}`);
+      }
+      if (value.$in !== undefined && Array.isArray(value.$in)) {
+        const list = value.$in
+          .map((v: unknown) => JSON.stringify(v))
+          .join(", ");
+        parts.push(`${key} IN (${list})`);
+      }
+
+      // Fallback if somehow no operators matched
+      if (!parts.length) {
+        return `${key} = ${JSON.stringify(value)}`;
+      }
+
+      return parts.join(" AND ");
+    }
+
+    // Primitive value: { id: 123 }
+    return `${key} = ${JSON.stringify(value)}`;
+  }
+
+  /**
    * String SQL generator (runtime only)
    */
   toSQL(): string {
@@ -73,13 +124,15 @@ export class QueryBuilder<TTable = null> {
 
     if (this._where) {
       const conditions = Object.entries(this._where)
-        .map(([k, v]) => `${k} = ${JSON.stringify(v)}`)
+        .map(([k, v]) => this.formatCondition(k, v))
         .join(" AND ");
       sql += ` WHERE ${conditions}`;
     }
 
     if (this._orderBy) {
-      sql += ` ORDER BY ${this._orderBy.column} ${this._orderBy.direction}`;
+      sql += ` ORDER BY ${
+        this._orderBy.column
+      } ${this._orderBy.direction.toUpperCase()}`;
     }
 
     return sql + ";";
