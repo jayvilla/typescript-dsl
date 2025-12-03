@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "dev": "ts-node src/examples/basic.ts",
+    "build": "tsc",
+    "start": "node dist/examples/basic.js"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "ts-node": "^10.9.2",
+    "@types/node": "^24.10.1"
+  }
+}
