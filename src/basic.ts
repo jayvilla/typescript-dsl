@@ -2,41 +2,18 @@
 
 import { sql } from "./sql";
 
-// Example 1 — simple equality
-const simple = sql
-  .from("users")
-  .select("id", "email", "createdAt")
-  .where({ id: 123 })
-  .orderBy("createdAt", "desc")
-  .toSQL();
+async function main() {
+  const q = sql
+    .from("users")
+    .select("id", "email")
+    .where({ id: 123 })
+    .orderBy("createdAt");
 
-console.log("Simple query:");
-console.log(simple);
+  const result = await q.execute();
 
-// Example 2 — advanced operators
-const advanced = sql
-  .from("posts")
-  .select("id", "title", "createdAt")
-  .where({
-    userId: { $eq: 42 },
-    createdAt: {
-      $gt: new Date("2024-01-01"),
-      $lt: new Date("2025-01-01"),
-    },
-    id: { $in: [1, 2, 3] },
-  })
-  .orderBy("createdAt", "asc")
-  .toSQL();
+  console.log("Query result:", result);
+  // Hover `result` → inferred type:
+  //     { id: number; email: string }[]
+}
 
-console.log("\nAdvanced query:");
-console.log(advanced);
-
-// Try hovering these in your editor to see type errors:
-//
-// sql
-//   .from("users")
-//   .where({ id: "not-a-number" }); // ❌ id must be number
-//
-// sql
-//   .from("users")
-//   .where({ foo: 123 }); // ❌ "foo" is not a column
+main();
